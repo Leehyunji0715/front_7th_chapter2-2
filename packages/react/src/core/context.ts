@@ -43,6 +43,7 @@ export const context: Context = {
      * 현재 실행 중인 컴포넌트의 고유 경로를 반환합니다.
      */
     get currentPath() {
+      console.log("currentPath > this.componentStack", this.componentStack);
       if (this.componentStack.length === 0) {
         throw new Error("훅은 컴포넌트 내부에서만 호출되어야 합니다");
       }
