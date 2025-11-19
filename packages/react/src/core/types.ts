@@ -48,6 +48,7 @@ export interface HooksContext {
   componentStack: string[];
 
   clear(): void;
+  moveCursor(): void;
 
   readonly currentPath: string;
   readonly currentCursor: number;

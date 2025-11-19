@@ -16,8 +16,9 @@ export const render = (): void => {
     return;
   }
 
-  // 2. 훅 컨텍스트 초기화 (visited 세트 클리어)
+  // 2. 훅 컨텍스트 초기화 (visited 세트와 커서 클리어)
   context.hooks.visited.clear();
+  context.hooks.cursor.clear();
 
   // 3. reconcile 함수를 호출하여 루트 노드를 재조정
   const newInstance = reconcile(container, context.root.instance, node, "i0");

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { shallowEquals, withEnqueue } from "../utils";
 import { context } from "./context";
 import { EffectHook } from "./types";
@@ -8,7 +9,14 @@ import { HookTypes } from "./constants";
  * 사용되지 않는 컴포넌트의 훅 상태와 이펙트 클린업 함수를 정리합니다.
  */
 export const cleanupUnusedHooks = () => {
-  // 여기를 구현하세요.
+  // state에는 있지만 visited에는 없는 컴포넌트들 = 제거된 컴포넌트들
+  for (const [path] of context.hooks.state) {
+    if (!context.hooks.visited.has(path)) {
+      // 이 컴포넌트는 더 이상 존재하지 않으므로 훅 상태 정리
+      context.hooks.state.delete(path);
+      context.hooks.cursor.delete(path);
+    }
+  }
 };
 
 /**
@@ -17,15 +25,40 @@ export const cleanupUnusedHooks = () => {
  * @returns [현재 상태, 상태를 업데이트하는 함수]
  */
 export const useState = <T>(initialValue: T | (() => T)): [T, (nextValue: T | ((prev: T) => T)) => void] => {
-  // 여기를 구현하세요.
   // 1. 현재 컴포넌트의 훅 커서와 상태 배열을 가져옵니다.
+  const currentCursor = context.hooks.currentCursor;
+  const currentHooks = context.hooks.currentHooks;
+
   // 2. 첫 렌더링이라면 초기값으로 상태를 설정합니다.
+  if (!currentHooks[currentCursor]) {
+    const value = typeof initialValue === "function" ? (initialValue as () => T)() : initialValue;
+
+    currentHooks[currentCursor] = {
+      kind: HookTypes.STATE,
+      value,
+    };
+  }
+
+  const hook = currentHooks[currentCursor];
+  const currentValue = hook.value as T;
+
   // 3. 상태 변경 함수(setter)를 생성합니다.
-  //    - 새 값이 이전 값과 같으면(Object.is) 재렌더링을 건너뜁니다.
-  //    - 값이 다르면 상태를 업데이트하고 재렌더링을 예약(enqueueRender)합니다.
+  const setState = (nextValue: T | ((prev: T) => T)) => {
+    const newValue = typeof nextValue === "function" ? (nextValue as (prev: T) => T)(currentValue) : nextValue;
+
+    // 새 값이 이전 값과 같으면(Object.is) 재렌더링을 건너뜁니다.
+    if (Object.is(newValue, currentValue)) {
+      return;
+    }
+
+    // 값이 다르면 상태를 업데이트하고 재렌더링을 예약(enqueueRender)합니다.
+    hook.value = newValue;
+    enqueueRender();
+  };
+
   // 4. 훅 커서를 증가시키고 [상태, setter]를 반환합니다.
-  const setState = (nextValue: T | ((prev: T) => T)) => {};
-  return [initialValue as T, setState];
+  context.hooks.moveCursor();
+  return [currentValue, setState];
 };
 
 /**
