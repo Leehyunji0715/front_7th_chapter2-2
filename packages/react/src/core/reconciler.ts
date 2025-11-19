@@ -61,6 +61,7 @@ export const reconcile = (
     // React 컴포넌트 처리
     if (typeof node.type === "function") {
       const newComponentInstance: Instance = createComponentInstance({ node, path, parentDom });
+      console.log("newComponentInstance", newComponentInstance);
       // 컴포넌트는 DOM이 없으므로 insertInstance 호출하지 않음
       return newComponentInstance;
     }
@@ -76,6 +77,9 @@ export const reconcile = (
   }
 
   // 4. 타입과 키가 같으면 인스턴스를 업데이트합니다. (update)
+  // 이전 props 저장 (DOM 업데이트 비교용)
+  const oldProps = instance.node.props;
+
   // 인스턴스의 기본 정보 업데이트
   instance.node = node;
   instance.path = path;
@@ -93,8 +97,8 @@ export const reconcile = (
   if (typeof node.type === "string") {
     const { children, ...props } = node.props;
     if (instance.dom) {
-      // DOM 속성 업데이트
-      updateDomProps(instance.dom as HTMLElement, instance.node.props, props);
+      // DOM 속성 업데이트 (이전 props와 새 props 비교)
+      updateDomProps(instance.dom as HTMLElement, oldProps, props);
       // 자식들 재조정
       instance.children = reconcileChildren(instance.dom as HTMLElement, instance.children, children || [], path);
     }
@@ -112,6 +116,7 @@ export const reconcile = (
   // React 컴포넌트 업데이트
   if (typeof node.type === "function") {
     context.hooks.componentStack.push(path);
+    context.hooks.visited.add(path); // 방문된 컴포넌트 추가
     try {
       // 컴포넌트 함수 재실행
       const Component = node.type as React.ComponentType<Record<string, unknown>>;
@@ -242,6 +247,7 @@ const reconcileChildren = (
 const createComponentInstance = ({ node, path, parentDom }: { node: VNode; path: string; parentDom: HTMLElement }) => {
   // 컴포넌트 스택에 현재 경로 추가 (훅 실행을 위해)
   context.hooks.componentStack.push(path);
+  context.hooks.visited.add(path); // 방문된 컴포넌트 추가
 
   try {
     // 컴포넌트 함수 실행

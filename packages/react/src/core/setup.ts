@@ -11,6 +11,7 @@ import { render } from "./render";
  * @param container - VNode가 렌더링될 DOM 컨테이너
  */
 export const setup = (rootNode: VNode | null, container: HTMLElement): void => {
+  console.log({ rootNode });
   // 1. 컨테이너 유효성을 검사합니다.
   if (!rootNode || !container) {
     throw new Error("rootNode와 container는 필수입니다");

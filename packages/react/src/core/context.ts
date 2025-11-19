@@ -43,7 +43,6 @@ export const context: Context = {
      * 현재 실행 중인 컴포넌트의 고유 경로를 반환합니다.
      */
     get currentPath() {
-      console.log("currentPath > this.componentStack", this.componentStack);
       if (this.componentStack.length === 0) {
         throw new Error("훅은 컴포넌트 내부에서만 호출되어야 합니다");
       }
@@ -67,6 +66,15 @@ export const context: Context = {
         this.state.set(path, []);
       }
       return this.state.get(path)!;
+    },
+
+    /**
+     * 현재 컴포넌트의 훅 커서를 다음 위치로 이동시킵니다.
+     */
+    moveCursor() {
+      const path = this.currentPath;
+      const currentCursor = this.cursor.get(path) || 0;
+      this.cursor.set(path, currentCursor + 1);
     },
   },
 
