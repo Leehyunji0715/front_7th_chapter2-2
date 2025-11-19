@@ -1,17 +1,39 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { context } from "./context";
-import { Fragment, NodeTypes, TEXT_ELEMENT } from "./constants";
-import { Instance, VNode } from "./types";
-import {
-  getFirstDom,
-  getFirstDomFromChildren,
-  insertInstance,
-  removeInstance,
-  setDomProps,
-  updateDomProps,
-} from "./dom";
+import { Fragment, NodeTypes, TEXT_ELEMENT, HookTypes } from "./constants";
+import { Instance, VNode, EffectHook } from "./types";
+import { insertInstance, removeInstance, setDomProps, updateDomProps } from "./dom";
 import { createChildPath } from "./elements";
-import { isEmptyValue } from "../utils";
+
+/**
+ * 인스턴스 트리를 순회하여 모든 컴포넌트의 Effect cleanup을 실행합니다.
+ */
+const cleanupInstanceEffects = (instance: Instance | null): void => {
+  if (!instance) {
+    return;
+  }
+
+  // 컴포넌트 인스턴스인 경우 Effect cleanup 실행
+  if (instance.kind === NodeTypes.COMPONENT) {
+    const hooks = context.hooks.state.get(instance.path);
+    if (hooks) {
+      hooks.forEach((hook) => {
+        if (hook.kind === HookTypes.EFFECT) {
+          const effectHook = hook as EffectHook;
+          if (effectHook.cleanup) {
+            effectHook.cleanup();
+          }
+        }
+      });
+    }
+  }
+
+  // 자식들도 재귀적으로 cleanup
+  if (instance.children) {
+    for (const child of instance.children) {
+      cleanupInstanceEffects(child);
+    }
+  }
+};
 
 /**
  * 이전 인스턴스와 새로운 VNode를 비교하여 DOM을 업데이트하는 재조정 과정을 수행합니다.
@@ -69,6 +91,8 @@ export const reconcile = (
   }
   // 3. 타입이나 키가 다르면 기존 인스턴스를 제거하고 새로 마운트합니다.
   if (instance.node.type !== node.type || instance.node.key !== node.key) {
+    // 컴포넌트 인스턴스인 경우 Effect cleanup 실행
+    cleanupInstanceEffects(instance);
     // 기존 인스턴스 제거
     removeInstance(parentDom, instance);
     // 새 노드 마운트 (재귀 호출)
@@ -274,6 +298,7 @@ const reconcileChildren = (
       childInstances.push(childInstance);
     } else if (oldChild) {
       // 새 자식이 없으면 기존 자식 제거
+      cleanupInstanceEffects(oldChild);
       removeInstance(parentDom, oldChild);
       childInstances.push(null);
     }

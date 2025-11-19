@@ -192,7 +192,7 @@ export const removeInstance = (parentDom: HTMLElement, instance: Instance | null
     return;
   }
 
-  // 인스턴스에서 모든 DOM 노드들을 가져와서 제거
+  // DOM 노드들 제거
   const domNodes = getDomNodes(instance);
   for (const domNode of domNodes) {
     if (domNode && domNode.parentNode === parentDom) {
