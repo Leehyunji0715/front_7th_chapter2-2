@@ -5,6 +5,12 @@ const base: string = process.env.NODE_ENV === "production" ? "/front_7th_chapter
 
 export default createViteConfig({
   base,
+  resolve: {
+    alias: {
+      react: resolve(__dirname, "../react/src"),
+      "react-dom": resolve(__dirname, "../react/src"),
+    },
+  },
   esbuild: {
     jsx: "transform",
     jsxInject: `import React from 'react';`,
