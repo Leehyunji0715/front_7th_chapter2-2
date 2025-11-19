@@ -30,6 +30,12 @@ export interface EffectHook {
   effect: () => (() => void) | void;
 }
 
+export interface StateHook {
+  kind: HookType["STATE"];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+}
+
 export interface RootContext {
   container: HTMLElement | null;
   node: VNode | null;
@@ -38,11 +44,10 @@ export interface RootContext {
   reset(options: { container: HTMLElement; node: VNode }): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type State = any;
+export type HookData = StateHook | EffectHook;
 
 export interface HooksContext {
-  state: Map<string, State[]>;
+  state: Map<string, HookData[]>;
   cursor: Map<string, number>;
   visited: Set<string>;
   componentStack: string[];
@@ -52,7 +57,7 @@ export interface HooksContext {
 
   readonly currentPath: string;
   readonly currentCursor: number;
-  readonly currentHooks: State[];
+  readonly currentHooks: HookData[];
 }
 
 export interface EffectsContext {
