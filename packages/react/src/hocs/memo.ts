@@ -12,10 +12,15 @@ import { shallowEquals } from "../utils";
  */
 export function memo<P extends object>(Component: FunctionComponent<P>, equals = shallowEquals) {
   const MemoizedComponent: FunctionComponent<P> = (props) => {
-    // 여기를 구현하세요.
-    // useRef를 사용하여 이전 props와 렌더링 결과를 저장해야 합니다.
-    // equals 함수로 이전 props와 현재 props를 비교하여 렌더링 여부를 결정합니다.
-    return Component(props);
+    const _props = useRef<P | undefined>(undefined);
+    const _prevRender = useRef<VNode | null | undefined>(undefined);
+
+    if (_props.current === undefined || !equals(_props.current, props)) {
+      _prevRender.current = Component(props);
+      _props.current = props; // 🔥 이 부분이 빠져있었습니다!
+    }
+
+    return _prevRender.current as VNode | null;
   };
 
   MemoizedComponent.displayName = `Memo(${Component.displayName || Component.name})`;
