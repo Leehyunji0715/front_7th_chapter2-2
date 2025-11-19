@@ -61,7 +61,6 @@ export const reconcile = (
     // React 컴포넌트 처리
     if (typeof node.type === "function") {
       const newComponentInstance: Instance = createComponentInstance({ node, path, parentDom });
-      console.log("newComponentInstance", newComponentInstance);
       // 컴포넌트는 DOM이 없으므로 insertInstance 호출하지 않음
       return newComponentInstance;
     }
@@ -173,9 +172,22 @@ const createHTMLInstance = ({ node, path }: { node: VNode; path: string }) => {
   // children이 있으면 재귀적으로 마운트
   if (children && Array.isArray(children)) {
     const childInstances: Instance[] = [];
+    // 컴포넌트 타입별로 0부터 시작하는 카운터
+    const typeCounters = new Map<string | symbol | React.ComponentType, number>();
+
     children.forEach((child, index) => {
       if (child) {
-        const childPath = createChildPath(path, child.key, index, child.type);
+        const effectiveKey = child.key;
+        let pathIndex = index;
+
+        // 컴포넌트인 경우 타입별 카운터 사용 (key가 없을 때만)
+        if (effectiveKey === null && typeof child.type === "function") {
+          const currentCount = typeCounters.get(child.type) || 0;
+          pathIndex = currentCount;
+          typeCounters.set(child.type, currentCount + 1);
+        }
+
+        const childPath = createChildPath(path, effectiveKey, pathIndex, child.type);
         const childInstance = reconcile(element, null, child, childPath);
         if (childInstance) {
           childInstances.push(childInstance);
@@ -202,9 +214,22 @@ const createFragmentInstance = ({ node, path, parentDom }: { node: VNode; path: 
   const { children } = node.props;
   if (children && Array.isArray(children)) {
     const childInstances: Instance[] = [];
+    // 컴포넌트 타입별로 0부터 시작하는 카운터
+    const typeCounters = new Map<string | symbol | React.ComponentType, number>();
+
     children.forEach((child, index) => {
       if (child) {
-        const childPath = createChildPath(path, child.key, index, child.type);
+        const effectiveKey = child.key;
+        let pathIndex = index;
+
+        // 컴포넌트인 경우 타입별 카운터 사용 (key가 없을 때만)
+        if (effectiveKey === null && typeof child.type === "function") {
+          const currentCount = typeCounters.get(child.type) || 0;
+          pathIndex = currentCount;
+          typeCounters.set(child.type, currentCount + 1);
+        }
+
+        const childPath = createChildPath(path, effectiveKey, pathIndex, child.type);
         const childInstance = reconcile(parentDom, null, child, childPath); // parentDom에 직접 삽입
         if (childInstance) {
           childInstances.push(childInstance);
@@ -226,12 +251,25 @@ const reconcileChildren = (
   const childInstances: (Instance | null)[] = [];
   const maxLength = Math.max(oldChildren.length, newChildren.length);
 
+  // 컴포넌트 타입별로 0부터 시작하는 카운터
+  const typeCounters = new Map<string | symbol | React.ComponentType, number>();
+
   for (let i = 0; i < maxLength; i++) {
     const oldChild = oldChildren[i];
     const newChild = newChildren[i];
 
     if (newChild) {
-      const childPath = createChildPath(parentPath, newChild.key, i, newChild.type);
+      const effectiveKey = newChild.key;
+      let pathIndex = i;
+
+      // 컴포넌트인 경우 타입별 카운터 사용 (key가 없을 때만)
+      if (effectiveKey === null && typeof newChild.type === "function") {
+        const currentCount = typeCounters.get(newChild.type) || 0;
+        pathIndex = currentCount;
+        typeCounters.set(newChild.type, currentCount + 1);
+      }
+
+      const childPath = createChildPath(parentPath, effectiveKey, pathIndex, newChild.type);
       const childInstance = reconcile(parentDom, oldChild, newChild, childPath);
       childInstances.push(childInstance);
     } else if (oldChild) {
