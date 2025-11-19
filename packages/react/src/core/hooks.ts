@@ -25,7 +25,8 @@ export const cleanupUnusedHooks = () => {
  * @returns [현재 상태, 상태를 업데이트하는 함수]
  */
 export const useState = <T>(initialValue: T | (() => T)): [T, (nextValue: T | ((prev: T) => T)) => void] => {
-  // 1. 현재 컴포넌트의 훅 커서와 상태 배열을 가져옵니다.
+  // 1. 현재 컴포넌트의 경로와 훅 커서를 가져옵니다.
+  const currentPath = context.hooks.currentPath;
   const currentCursor = context.hooks.currentCursor;
   const currentHooks = context.hooks.currentHooks;
 
@@ -44,10 +45,12 @@ export const useState = <T>(initialValue: T | (() => T)): [T, (nextValue: T | ((
 
   // 3. 상태 변경 함수(setter)를 생성합니다.
   const setState = (nextValue: T | ((prev: T) => T)) => {
-    const newValue = typeof nextValue === "function" ? (nextValue as (prev: T) => T)(currentValue) : nextValue;
+    // 최신 상태 값을 가져옵니다 (동일한 이벤트 루프에서 여러 번 호출될 수 있음)
+    const latestValue = hook.value as T;
+    const newValue = typeof nextValue === "function" ? (nextValue as (prev: T) => T)(latestValue) : nextValue;
 
     // 새 값이 이전 값과 같으면(Object.is) 재렌더링을 건너뜁니다.
-    if (Object.is(newValue, currentValue)) {
+    if (Object.is(newValue, latestValue)) {
       return;
     }
 

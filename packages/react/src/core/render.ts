@@ -1,7 +1,6 @@
 import { context } from "./context";
 // import { getDomNodes, insertInstance } from "./dom";
 import { reconcile } from "./reconciler";
-import { cleanupUnusedHooks } from "./hooks";
 import { withEnqueue } from "../utils";
 
 /**
@@ -16,18 +15,29 @@ export const render = (): void => {
     return;
   }
 
-  // 2. 훅 컨텍스트 초기화 (visited 세트와 커서 클리어)
-  context.hooks.visited.clear();
-  context.hooks.cursor.clear();
+  // 2. 방문된 컴포넌트들의 훅 커서만 리셋
+  for (const path of context.hooks.visited) {
+    context.hooks.cursor.set(path, 0);
+  }
 
-  // 3. reconcile 함수를 호출하여 루트 노드를 재조정
+  // 3. 새로운 렌더링 사이클을 위한 visited 준비
+  const previousVisited = new Set(context.hooks.visited);
+  context.hooks.visited.clear();
+
+  // 4. reconcile 함수를 호출하여 루트 노드를 재조정
   const newInstance = reconcile(container, context.root.instance, node, "i0");
 
-  // 4. 루트 인스턴스 업데이트
+  // 5. 루트 인스턴스 업데이트
   context.root.instance = newInstance;
 
-  // 5. 사용되지 않은 훅들을 정리
-  cleanupUnusedHooks();
+  // 6. 사용되지 않은 훅들을 정리 (visited 클리어 전의 상태로 확인)
+  for (const [path] of context.hooks.state) {
+    if (!context.hooks.visited.has(path) && previousVisited.has(path)) {
+      // 이전에 존재했지만 현재 렌더링에서 방문되지 않은 컴포넌트 정리
+      context.hooks.state.delete(path);
+      context.hooks.cursor.delete(path);
+    }
+  }
 };
 
 /**

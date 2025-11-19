@@ -94,14 +94,22 @@ export const createChildPath = (
   nodeType?: string | symbol | React.ComponentType,
   siblings?: VNode[],
 ): string => {
-  // key가 있으면 key 기반 경로, 없으면 index 기반 경로 생성
-  const keyOrIndex = key !== null ? `k${key}` : `i${index}`;
+  let pathSegment: string;
 
-  // 컴포넌트 타입인지 확인 (함수, 클래스 컴포넌트)
-  const isComponent = typeof nodeType === "function";
-
-  // 컴포넌트인 경우 'c' 접두사 추가
-  const pathSegment = isComponent ? `c${keyOrIndex}` : keyOrIndex;
+  if (key !== null) {
+    // key가 있으면 key 기반 경로
+    pathSegment = `k${key}`;
+  } else {
+    // key가 없으면 타입별 인덱스 사용
+    if (typeof nodeType === "function") {
+      // 컴포넌트인 경우: 컴포넌트 이름 + 타입별 인덱스
+      const componentName = nodeType.name || "Component";
+      pathSegment = `c${componentName}${index}`;
+    } else {
+      // HTML 요소나 기타인 경우: 일반 인덱스
+      pathSegment = `i${index}`;
+    }
+  }
 
   // 부모 경로가 비어있으면 현재 세그먼트만 반환, 아니면 점으로 연결
   return parentPath ? `${parentPath}.${pathSegment}` : pathSegment;
